@@ -1,0 +1,19 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+ipython = "*"
+tox = "*"
+
+[packages]
+matlabengineforpython = {editable = true,path = "/usr/local/MATLAB/R2019a/extern/engines/python"}
+numpy = "*"
+pytest = "*"
+hypothesis = "*"
+poliastro = "*"
+ipywidgets = "*"
+
+[requires]
+python_version = "3.7"
