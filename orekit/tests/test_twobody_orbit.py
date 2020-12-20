@@ -54,3 +54,22 @@ def test_orekit_orbit_from_classical():
     # Assert position and velocity vectors
     assert_quantity_allclose(ss_poliastro.r, ss_orekit.r)
     assert_quantity_allclose(ss_poliastro.v, ss_orekit.v)
+
+
+def test_orekit_orbit_propagation():
+
+    # Data from Vallado, example 2.4
+    r0 = [1131.340, -2282.343, 6672.423] * u.km
+    v0 = [-5.64305, 4.30333, 2.42879] * u.km / u.s
+    expected_r = [-4219.7527, 4363.0292, -3958.7666] * u.km
+    expected_v = [3.689866, -1.916735, -6.112511] * u.km / u.s
+
+    tof = 40 * u.min
+    ss_poliastro = Orbit.from_vectors(Earth, r0, v0).propagate(tof)
+    ss_orekit = OrekitOrbit.from_vectors(Earth, r0, v0).propagate(tof)
+
+    rr_poliastro, vv_poliastro = ss_poliastro.rv()
+    rr_orekit, vv_orekit = ss_orekit.rv()
+
+    assert_quantity_allclose(rr_poliastro, rr_orekit)
+    assert_quantity_allclose(vv_poliastro, vv_orekit)
