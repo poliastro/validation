@@ -1,0 +1,9 @@
+name: poliastro-validation
+channels:
+  - conda-forge
+dependencies:
+  - astropy
+  - numpy
+  - poliastro
+  - orekit
+  - pytest
