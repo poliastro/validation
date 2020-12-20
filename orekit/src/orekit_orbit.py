@@ -8,6 +8,7 @@ from orekit.pyhelpers import setup_orekit_curdir
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.frames import FramesFactory
 from org.orekit.orbits import KeplerianOrbit, OrbitType, PositionAngle
+from org.orekit.propagation.analytical import KeplerianPropagator
 from org.orekit.time import AbsoluteDate
 from org.orekit.utils import Constants, PVCoordinates
 from utils import setup_orekit_env
@@ -21,7 +22,7 @@ vm = setup_orekit_env()
 class OrekitOrbit:
     """ Generate poliastro likely orbit from orekit API """
 
-    def __init__(self, state):
+    def __init__(self, attractor, state, epoch, frame):
         """Initializes the OrekitOrbit from a KeplerianOrbit
 
         Parameters
@@ -29,7 +30,30 @@ class OrekitOrbit:
         state: KeplerianOrbit
 
         """
+
+        # Minimum attributes for describing an orbit in space-time
+        self._attractor = attractor
         self._state = state
+        self._epoch = epoch
+        self._frame = frame
+
+        # Custom keplerian propagator
+        self._propagator = KeplerianPropagator(self._state)
+
+    @property
+    def attractor(self):
+        """ Attractor of the orbit """
+        return self._attractor
+
+    @property
+    def epoch(self):
+        """ Epoch of the orbit """
+        return self._epoch
+
+    @property
+    def frame(self):
+        """ Frame of the orbit """
+        return self._frame
 
     @property
     def r(self):
@@ -100,9 +124,9 @@ class OrekitOrbit:
         k = float(attractor.k.to(u.m ** 3 / u.s ** 2).value)
 
         # Build a KeplerianOrbit from vectors
-        ss = KeplerianOrbit(rv_state, frame, epoch, k)
+        state = KeplerianOrbit(rv_state, frame, epoch, k)
 
-        return cls(ss)
+        return cls(attractor, state, epoch, frame)
 
     @classmethod
     def from_classical(
@@ -128,7 +152,7 @@ class OrekitOrbit:
         nu = float(nu.to(u.rad).value)
 
         # Generate a Orekit KeplerianOrbit
-        ss = KeplerianOrbit(
+        state = KeplerianOrbit(
             a,
             ecc,
             inc,
@@ -141,7 +165,7 @@ class OrekitOrbit:
             Constants.WGS84_EARTH_MU,
         )
 
-        return cls(ss)
+        return cls(attractor, state, epoch, frame)
 
     def classical(self):
         """ Returns orbit classical elements """
@@ -159,3 +183,21 @@ class OrekitOrbit:
     def rv(self):
         """ Returns position and velocity vectors """
         return self.r, self.v
+
+    def propagate(self, tof):
+        """ Propagates the orbit a given amount of time """
+
+        # Ensure seconds conversion and floating value
+        tof = float(tof.to(u.s).value)
+
+        # Generate the new epoch by shifting orbit's original one
+        new_epoch = self.epoch.shiftedBy(tof)
+
+        # Propagate the orbit and get the new position and velocity vectors
+        rv_new = self._propagator.propagate(self.epoch, new_epoch).getPVCoordinates()
+        r, v = (rv_new.getPosition().toArray()) * u.m, (
+            rv_new.getVelocity().toArray()
+        ) * u.m / u.s
+
+        # Return a new orbit from
+        return OrekitOrbit.from_vectors(self.attractor, r, v, new_epoch, self.frame)
