@@ -8,6 +8,8 @@ from orekit.pyhelpers import setup_orekit_curdir
 
 import orekit
 
+logger = logging.getLogger(__name__)
+
 OREKIT_SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 OREKIT_DATA_DIR = os.path.join(OREKIT_SRC_DIR, "data")
 OREKIT_DATA_PATH = os.path.join(OREKIT_DATA_DIR, "orekit-data.zip")
@@ -25,9 +27,6 @@ def build_data_dir(dirname_path=OREKIT_DATA_DIR):
 def download_orekit_data(save_path=OREKIT_DATA_PATH, chunk_size=128):
     """ Downloads orekit ZIP data """
 
-    # Prepare the logger
-    log = logging.getLogger(__name__)
-
     # Official data download link
     url = "https://gitlab.orekit.org/orekit/orekit-data/-/archive/master/orekit-data-master.zip"
 
@@ -36,7 +35,7 @@ def download_orekit_data(save_path=OREKIT_DATA_PATH, chunk_size=128):
     with open(save_path, "wb") as fd:
         for chunk in r.iter_content(chunk_size=chunk_size):
             fd.write(chunk)
-    log.info("Data downloaded correctly.")
+    logger.info("Data downloaded correctly.")
 
 
 def setup_orekit_env(data_path=OREKIT_DATA_PATH):
