@@ -1,18 +1,11 @@
 """ Test cases for two-body orbit behaviors """
 
 # Import required orekit data in current directory
-import pytest
 from astropy import units as u
-import numpy as np
 from astropy.tests.helper import assert_quantity_allclose
-from numpy.testing import assert_allclose
 from orekit_orbit import OrekitOrbit
 from poliastro.bodies import Earth
 from poliastro.twobody import Orbit
-from utils import setup_orekit_env
-
-# Start orekit virtual machine and load data
-vm = setup_orekit_env()
 
 
 def test_orekit_orbit_from_rv():
@@ -61,8 +54,6 @@ def test_orekit_orbit_propagation():
     # Data from Vallado, example 2.4
     r0 = [1131.340, -2282.343, 6672.423] * u.km
     v0 = [-5.64305, 4.30333, 2.42879] * u.km / u.s
-    expected_r = [-4219.7527, 4363.0292, -3958.7666] * u.km
-    expected_v = [3.689866, -1.916735, -6.112511] * u.km / u.s
 
     tof = 40 * u.min
     ss_poliastro = Orbit.from_vectors(Earth, r0, v0).propagate(tof)

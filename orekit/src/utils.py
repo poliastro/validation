@@ -4,9 +4,9 @@ import logging
 import os
 
 import requests
-from orekit.pyhelpers import setup_orekit_curdir
 
 import orekit
+from orekit.pyhelpers import setup_orekit_curdir
 
 logger = logging.getLogger(__name__)
 

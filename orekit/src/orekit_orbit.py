@@ -1,22 +1,15 @@
 """ Simulate Orekit orbit as poliastro one """
 
-import os
-
 import numpy as np
 from astropy import units as u
-from orekit.pyhelpers import setup_orekit_curdir
+
+from utils import vm  # noqa: F401 # isort: split
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.frames import FramesFactory
-from org.orekit.orbits import KeplerianOrbit, OrbitType, PositionAngle
+from org.orekit.orbits import KeplerianOrbit, PositionAngle
 from org.orekit.propagation.analytical import KeplerianPropagator
 from org.orekit.time import AbsoluteDate
-from org.orekit.utils import Constants, PVCoordinates
-from utils import setup_orekit_env
-
-import orekit
-
-# Start orekit virtual machine and load data
-vm = setup_orekit_env()
+from org.orekit.utils import PVCoordinates
 
 
 class OrekitOrbit:
@@ -153,16 +146,7 @@ class OrekitOrbit:
 
         # Generate a Orekit KeplerianOrbit
         state = KeplerianOrbit(
-            a,
-            ecc,
-            inc,
-            argp,
-            raan,
-            nu,
-            PositionAngle.TRUE,
-            frame,
-            epoch,
-            Constants.WGS84_EARTH_MU,
+            a, ecc, inc, argp, raan, nu, PositionAngle.TRUE, frame, epoch, k
         )
 
         return cls(attractor, state, epoch, frame)
@@ -195,9 +179,10 @@ class OrekitOrbit:
 
         # Propagate the orbit and get the new position and velocity vectors
         rv_new = self._propagator.propagate(self.epoch, new_epoch).getPVCoordinates()
-        r, v = (rv_new.getPosition().toArray()) * u.m, (
-            rv_new.getVelocity().toArray()
-        ) * u.m / u.s
+        r, v = (
+            (rv_new.getPosition().toArray()) * u.m,
+            (rv_new.getVelocity().toArray()) * u.m / u.s,
+        )
 
         # Return a new orbit from
         return OrekitOrbit.from_vectors(self.attractor, r, v, new_epoch, self.frame)
