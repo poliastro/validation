@@ -54,3 +54,7 @@ def setup_orekit_env(data_path=OREKIT_DATA_PATH):
     setup_orekit_curdir(OREKIT_DATA_PATH)
 
     return vm
+
+
+vm = setup_orekit_env()
+""" Sets up Orekit's virtual machine """
