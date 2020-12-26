@@ -1,0 +1,68 @@
+# This is a basic workflow to help you get started with Actions
+name: Continuous integration
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  
+  # Check if new features match expected code quality
+  code-quality-check:
+    name: Code quality check
+    runs-on: ubuntu-latest
+
+    # Steps to be executed during code quality job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      # Python code quality and lint
+      - uses: ricardochaves/python-lint@v1.3.0
+        with:
+          python-root-list: "orekit/"
+          use-black: true
+          use-flake8: true
+          use-isort: true
+          use-pylint: false
+          use-pycodestyle: false
+          use-mypy: false
+          # Tool's configuration is the same as poliastro
+          extra-black-options: "--check --diff"
+          extra-isort-options: "--check-only --diff"
+          extra-flake8-options: "--ignore=E203,E266,E501,W503 --max-line-length=80 --max-complexity=18 --select=B,C,E,F,W,T4,B9"
+
+
+  # Execute tests to check if they are still valid for new features
+  orekit-validation-tests:
+    name: Orekit validation tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8]
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    # Steps to be executed during tests checking job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      # Install miniconda
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: orekit/environment.yml
+          python-version: ${{ matrix.python-version }}
+          auto-activate-base: false
+          activate-environment: poliastro-validation
+      - run: |
+          conda info
+          conda list
+          pytest orekit/tests/
