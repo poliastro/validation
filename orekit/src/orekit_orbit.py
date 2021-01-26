@@ -196,3 +196,15 @@ class OrekitOrbit:
 
         # Return a new orbit from
         return OrekitOrbit.from_vectors(self.attractor, r, v, new_epoch, self.frame)
+
+    def apply_maneuver(self, man, tof):
+        """ Applies a maneuver to current orbit """
+
+        # Update internal propagator with the new attitude
+        self._propagator = KeplerianPropagator(self._state, man.attitude_provider)
+
+        # Add impulses to previous propagator
+        for burn in man.burns:
+            self._propagator.addEventDetector(burn)
+
+        return self.propagate(tof)
