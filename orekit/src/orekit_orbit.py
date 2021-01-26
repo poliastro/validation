@@ -90,6 +90,16 @@ class OrekitOrbit:
         return self._state.getPerigeeArgument() * u.rad
 
     @property
+    def r_p(self):
+        """ Magnitude of the radius of periapsis """
+        return self.a * (1 - self.ecc)
+
+    @property
+    def r_a(self):
+        """ Magnitude of the radius of apoapsis """
+        return self.a * (1 + self.ecc)
+
+    @property
     def nu(self):
         """ True anomaly """
         return self._state.getTrueAnomaly() * u.rad
