@@ -1,9 +1,9 @@
 import os
-import sys
 
-# Get orekit validation tests/ and find the src/ one
-TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
-OREKIT_SRC_DIR = os.path.join(TESTS_DIR, os.pardir, "src")
+from orekit.pyhelpers import download_orekit_data_curdir
 
-# Append src/ to path to access custom orekit modules
-sys.path.append(OREKIT_SRC_DIR)
+if not os.path.exists("orekit-data.zip"):
+    try:
+        download_orekit_data_curdir()
+    except Exception:
+        raise RuntimeError("Orekit data was not successfully downloaded.")
