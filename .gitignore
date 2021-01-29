@@ -131,4 +131,4 @@ dmypy.json
 .idea/
 
 # Ignore orekit-data.zip within version control
-orekit/src/data/
+orekit-data.zip
