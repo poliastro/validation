@@ -21,10 +21,10 @@ setup_orekit_curdir("orekit-data.zip")
 
 
 def validate_elliptic_propagation():
-    # Initial orbit state vectors, final radius and time of flight
-    rx_0, ry_0, rz_0 = [float(ri_0) for ri_0 in [1131.340e3, -2282.343e3, 6672.423e3]]
-    vx_0, vy_0, vz_0 = [float(vi_0) for vi_0 in [-5.64305e3, 4.30333e3, 2.42879e3]]
-    tof = float(1.5 * 3600)
+    # Orbit initial state vectors and time of flight
+    rx_0, ry_0, rz_0 = 1131.340e3, -2282.343e3, 6672.423e3
+    vx_0, vy_0, vz_0 = -5.64305e3, 4.30333e3, 2.42879e3
+    tof = 1.5 * 3600
 
     # Build the initial Orekit orbit
     k = C.IAU_2015_NOMINAL_EARTH_GM

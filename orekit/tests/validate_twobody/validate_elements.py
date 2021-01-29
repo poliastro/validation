@@ -21,9 +21,9 @@ setup_orekit_curdir("orekit-data.zip")
 
 
 def validate_rv2coe():
-    # Initial orbit state vectors, final radius and time of flight
-    rx_0, ry_0, rz_0 = [float(ri_0) for ri_0 in [-6045, -3490, 2500]]
-    vx_0, vy_0, vz_0 = [float(vi_0) for vi_0 in [-3.457, 6.618, 2.533]]
+    # Orbit initial state vectors
+    rx_0, ry_0, rz_0 = -6045.0, -3490.0, 2500.0
+    vx_0, vy_0, vz_0 = -3.457, 6.618, 2.533
 
     # Build the initial Orekit orbit
     k = C.IAU_2015_NOMINAL_EARTH_GM
@@ -65,7 +65,7 @@ def validate_rv2coe():
 def validate_coe2rv():
 
     # Initial COE of the orbit
-    a, ecc, inc, raan, argp, nu = [87800e3, 0.1712, 2.6738, 4.4558, 0.3612, 0.4965]
+    a, ecc, inc, raan, argp, nu = 87800e3, 0.1712, 2.6738, 4.4558, 0.3612, 0.4965
 
     # Build Orekit orbit
     k = C.IAU_2015_NOMINAL_EARTH_GM
