@@ -1,0 +1,164 @@
+%--------------------------------------------
+%-- GMAT validate Bi-elliptic 3D maneuvers --
+%--------------------------------------------
+
+% ABOUT
+% -----
+%
+% The following script tries to validate
+% poliastro's Bi-elliptic maneuvers against 
+% GMAT2020a version.
+
+%----------------------------------------
+%---------- Spacecraft
+%----------------------------------------
+
+% Build spacecraft's orbit from vectors
+Create Spacecraft ss_0;
+GMAT ss_0.DateFormat = TAIGregorian;
+GMAT ss_0.CoordinateSystem = EarthICRF;
+GMAT ss_0.DisplayStateType = Cartesian;
+GMAT ss_0.X = 7200; 
+GMAT ss_0.Y = -1000;
+GMAT ss_0.Z = 0;
+GMAT ss_0.VX = 0;
+GMAT ss_0.VY =  8.00;
+GMAT ss_0.VZ = 3.25;
+
+%----------------------------------------
+%---------- ForceModel
+%----------------------------------------
+
+% Build a two-body two-point force model
+Create ForceModel PointMass;
+GMAT PointMass.CentralBody = Earth;
+GMAT PointMass.PrimaryBodies = {Earth};
+GMAT PointMass.Drag = None;
+GMAT PointMass.SRP = Off;
+GMAT PointMass.RelativisticCorrection = Off;
+GMAT PointMass.ErrorControl = RSSStep;
+GMAT PointMass.GravityField.Earth.Degree = 0;
+GMAT PointMass.GravityField.Earth.Order = 0;
+GMAT PointMass.GravityField.Earth.StmLimit = 100;
+
+
+%----------------------------------------
+%---------- Propagators
+%----------------------------------------
+
+% Create propgator with point mass only
+Create Propagator EarthPointMass;
+GMAT EarthPointMass.FM = PointMass;
+GMAT EarthPointMass.Type = PrinceDormand78;
+GMAT EarthPointMass.InitialStepSize = 0.5;
+GMAT EarthPointMass.Accuracy = 1e-12;
+GMAT EarthPointMass.MinStep = 0;
+GMAT EarthPointMass.MaxStep = 86400;
+GMAT EarthPointMass.MaxStepAttempts = 500;
+GMAT EarthPointMass.StopIfAccuracyIsViolated = false;
+
+%----------------------------------------
+%---------- Burns
+%----------------------------------------
+
+% Instantiate the first impulse
+Create ImpulsiveBurn dV_a;
+GMAT dV_a.CoordinateSystem = Local;
+GMAT dV_a.Origin = Earth;
+GMAT dV_a.Axes = VNB;
+GMAT dV_a.Element1 = 0;
+GMAT dV_a.Element2 = 0;
+GMAT dV_a.Element3 = 0;
+GMAT dV_a.DecrementMass = false;
+GMAT dV_a.Isp = 300;
+
+% Instantiate the second impulse
+Create ImpulsiveBurn dV_b;
+GMAT dV_b.CoordinateSystem = Local;
+GMAT dV_b.Origin = Earth;
+GMAT dV_b.Axes = VNB;
+GMAT dV_b.Element1 = 0;
+GMAT dV_b.Element2 = 0;
+GMAT dV_b.Element3 = 0;
+GMAT dV_b.DecrementMass = false;
+GMAT dV_b.Isp = 300;
+
+% Instantiate the third impulse
+Create ImpulsiveBurn dV_c;
+GMAT dV_b.CoordinateSystem = Local;
+GMAT dV_b.Origin = Earth;
+GMAT dV_b.Axes = VNB;
+GMAT dV_b.Element1 = 0;
+GMAT dV_b.Element2 = 0;
+GMAT dV_b.Element3 = 0;
+GMAT dV_b.DecrementMass = false;
+GMAT dV_b.Isp = 300;
+
+%----------------------------------------
+%---------- Solvers
+%----------------------------------------
+
+% Default GMAT solver
+Create DifferentialCorrector DC;
+GMAT DC.ShowProgress = true;
+GMAT DC.ReportStyle = Normal;
+GMAT DC.ReportFile = 'DifferentialCorrectorDC.data';
+GMAT DC.MaximumIterations = 25;
+GMAT DC.DerivativeMethod = ForwardDifference;
+GMAT DC.Algorithm = NewtonRaphson;
+
+%----------------------------------------
+%---------- Plots/Reports
+%----------------------------------------
+
+Create OrbitView GLPlot;
+GMAT GLPlot.Add = {ss_0, Earth};
+GMAT GLPlot.CoordinateSystem = EarthICRF;
+
+Create ReportFile report;
+GMAT report.SolverIterations = Current;
+GMAT report.Filename = 'ReportData.txt';
+GMAT report.Precision = 7;
+GMAT report.Add = {ss_0.UTCGregorian, ss_0.ElapsedSecs, ss_0.X, ss_0.Y, ss_0.Z, ss_0.VX, ss_0.VY, ss_0.VZ};
+GMAT report.WriteHeaders = true;
+GMAT report.LeftJustify = Off;
+GMAT report.ZeroFill = On;
+GMAT report.FixedWidth = true;
+GMAT report.Delimiter = ' ';
+GMAT report.ColumnWidth = 10;
+GMAT report.WriteReport = true;
+
+
+%----------------------------------------
+%---------- Mission Sequence
+%----------------------------------------
+BeginMissionSequence;
+
+% Propagate to perigee to ensure maneuver is properly applied
+Propagate 'Propagate to perigee' EarthPointMass(ss_0) {ss_0.Periapsis};
+
+% Burn in the velocity direction to reach an alternate Apoapsis point
+Target 'Apply Bi-elliptic maneuver' DC {SolveMode = Solve, ExitMode = DiscardAndContinue, ShowProgressWindow = false};
+
+	% Apply the first impulse to achieve a 2100000km semi-major axis elliptic orbit
+   Vary 'Find dV_a' DC(dV_a.Element1 = 0.5, {Perturbation = 0.0001, Lower = 0, Upper = 3.14159, MaxStep = 0.2, AdditiveScaleFactor = 0.0, MultiplicativeScaleFactor = 1.0});
+   Maneuver 'Apply dV_a burn' dV_a(ss_0);
+   Propagate 'Propagate to apogee' EarthPointMass(ss_0) {ss_0.Apoapsis};
+   Achieve 'Achieve r_b' DC(ss_0.Earth.RMAG = 50000.00, {Tolerance = 0.01});
+	
+	% Apply the second impulse to circularize orbit
+   Vary 'Find dV_b' DC(dV_b.Element1 = 0.5, {Perturbation = 0.0001, Lower = 0, Upper = 3.14159, MaxStep = 0.2, AdditiveScaleFactor = 0.0, MultiplicativeScaleFactor = 1.0});
+   Maneuver 'Apply dV_b' dV_b(ss_0);
+	Propagate 'Propagate to perigee' EarthPointMass(ss_0) {ss_0.Periapsis};
+   Achieve 'Achieve r_c' DC(ss_0.Earth.RMAG = 35781.34857, {Tolerance = 0.01});
+	
+	% Apply the third impulse to circularize orbit
+   Vary 'Find dV_c' DC(dV_c.Element1 = 10, {Perturbation = 0.0001, Lower = -10, Upper = 3.14159, MaxStep = 0.2, AdditiveScaleFactor = 0.0, MultiplicativeScaleFactor = 1.0});
+   Maneuver 'Apply dV_c' dV_c(ss_0);
+   Achieve 'Circularize orbit' DC(ss_0.ECC = 0, {Tolerance = 0.01});
+
+
+EndTarget;
+
+% Propagate to leave apoapsis behind so GMAT can apply the last burn
+Propagate 'Propagate 1 hour' EarthPointMass(ss_0) {ss_0.ElapsedSecs = 3600};
