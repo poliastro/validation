@@ -5,7 +5,7 @@
 % ABOUT
 % -----
 %
-% The following script tries to validate
+% The following script is used to validate
 % poliastro's Bi-elliptic maneuvers against 
 % GMAT2020a version.
 
