@@ -2,8 +2,8 @@ name: poliastro-validation
 channels:
   - conda-forge
 dependencies:
-  - astropy
-  - numpy
-  - poliastro
   - orekit
+  - pip
+  - pip:
+    - git+https://github.com/poliastro/poliastro.git
   - pytest
