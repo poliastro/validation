@@ -132,3 +132,6 @@ dmypy.json
 
 # Ignore orekit-data.zip within version control
 orekit-data.zip
+
+# Ignore GMAT generated scritps for frame validatoin
+gmat/tests/frames_tests/
