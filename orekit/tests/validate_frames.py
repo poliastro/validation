@@ -3,11 +3,11 @@
 from itertools import product
 
 import numpy as np
-from numpy.linalg import norm
 import pytest
 from astropy import units as u
 from astropy.coordinates import CartesianRepresentation
 from astropy.tests.helper import assert_quantity_allclose
+from numpy.linalg import norm
 from org.hipparchus.geometry.euclidean.threed import Vector3D
 from org.orekit.bodies import CelestialBodyFactory
 from org.orekit.frames import Frame, FramesFactory, Transform
