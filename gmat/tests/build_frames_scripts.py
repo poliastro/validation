@@ -86,12 +86,6 @@ def main():
                     # print(filled_template, file=filled_template_file)
                     filled_template_file.write(filled_template)
 
-                # Close the filled template_file
-                filled_template_file.close()
-
-    # Close the template file
-    template_file.close()
-
 
 if __name__ == "__main__":
     main()
