@@ -57,7 +57,10 @@ VM = orekit.initVM()
 setup_orekit_curdir("orekit-data.zip")
 
 # All interesting 3D directions
-R_SET, V_SET = [list(product([-1, 0, 1], repeat=3)) for _ in range(2)]
+R_SET = [
+    vector for vector in product([-1, 0, 1], repeat=3) if list(vector) != [0, 0, 0]
+]
+V_SET = R_SET.copy()
 
 # Retrieve celestial bodies from orekit
 Sun_orekit = CelestialBodyFactory.getSun()
@@ -168,14 +171,20 @@ ITRF_FRAME_OREKIT = FramesFactory.getITRF(IERSConventions.IERS_2010, False)
     "body_name",
     [
         "Sun",
-        pytest.param("Mercury", marks=pytest.mark.xfail),
+        pytest.param(
+            "Mercury", marks=pytest.mark.xfail
+        ),  # poliastro WGCCRE 2015 report != orekit IAU 2009 report
         "Venus",
         "Moon",
-        pytest.param("Mars", marks=pytest.mark.xfail),
+        pytest.param(
+            "Mars", marks=pytest.mark.xfail
+        ),  # poliastro WGCCRE 2015 report != orekit WGCCRE 2009 report
         "Jupiter",
         "Saturn",
         "Uranus",
-        pytest.param("Neptune", marks=pytest.mark.xfail),
+        pytest.param(
+            "Neptune", marks=pytest.mark.xfail
+        ),  # poliastro WGCCRE 2015 report != orekit IAU 2009 report
     ],
 )
 def validate_from_body_intertial_to_body_fixed(body_name, r_vec, v_vec):
@@ -191,14 +200,10 @@ def validate_from_body_intertial_to_body_fixed(body_name, r_vec, v_vec):
     r_norm, v_norm = [norm(vec) for vec in [r_vec, v_vec]]
     R = BODY_POLIASTRO.R.to(u.m).value
 
-    # Correction factor to normalize position and velocity vectors
-    k_r = R / r_norm if r_norm != 0 else 1.00
-    k_v = 1 / v_norm if v_norm != 0 else 1.00
-
     # Make a position vector who's norm is equal to the body's radius. Make a
     # unitary velocity vector. Units are in [m] and [m / s].
-    rx, ry, rz = [float(k_r * r_i) for r_i in r_vec]
-    vx, vy, vz = [float(k_v * v_i) for v_i in v_vec]
+    rx, ry, rz = [float(r_i * R / r_norm) for r_i in r_vec]
+    vx, vy, vz = [float(v_i / v_norm) for v_i in v_vec]
 
     # poliastro: build r_vec and v_vec wrt inertial body frame
     xyz_poliastro = CartesianRepresentation(rx * u.m, ry * u.m, rz * u.m)
