@@ -14,7 +14,10 @@ from poliastro.bodies import Uranus as Uranus_poliastro
 from poliastro.bodies import Venus as Venus_poliastro
 
 # All interesting 3D directions
-R_SET, V_SET = [list(product([-1, 0, 1], repeat=3)) for _ in range(2)]
+R_SET = [
+    vector for vector in product([-1, 0, 1], repeat=3) if list(vector) != [0, 0, 0]
+]
+V_SET = R_SET.copy()
 
 # Name of the bodies
 BODIES_NAMES = [
@@ -43,44 +46,52 @@ POLIASTRO_BODIES = [
 
 BODY_FROM_NAME = dict(zip(BODIES_NAMES, POLIASTRO_BODIES))
 
-if __name__ == "__main__":
+
+def main():
 
     # Open the template
-    with open("template_frames.script") as template_file:
+    with open("template_frames.script.tpl") as template_file:
         template_raw = Template(template_file.read())
 
-        # Generate a particular configuration of body + r_vec + v_vec
-        for body_name in BODIES_NAMES:
-            for r_vec in R_SET:
-                for v_vec in V_SET:
+    # Generate a particular configuration of body + r_vec + v_vec
+    for body_name in BODIES_NAMES:
+        for r_vec in R_SET:
+            for v_vec in V_SET:
 
-                    # Generate a filename hosting simulation information for the script
-                    (rx, ry, rz), (vx, vy, vz) = r_vec, v_vec
-                    filename = f"gmat_validate_{body_name}_frames_R{rx}{ry}{rz}_V{vx}{vy}{vz}.script"
+                # Generate a filename hosting simulation information for the script
+                (rx, ry, rz), (vx, vy, vz) = r_vec, v_vec
+                filename = f"gmat_validate_{body_name}_frames_R{rx}{ry}{rz}_V{vx}{vy}{vz}.script"
 
-                    # Compute Body radius in kilometers
-                    r_norm, v_norm = [norm(vec) for vec in [r_vec, v_vec]]
-                    R = BODY_FROM_NAME[body_name].R.to(u.km).value
+                # Compute vector norms and body radius in kilometers
+                r_norm, v_norm = [norm(vec) for vec in [r_vec, v_vec]]
+                R = BODY_FROM_NAME[body_name].R.to(u.km).value
 
-                    # Correction factor to normalize position and velocity vectors
-                    k_r = R / r_norm if r_norm != 0 else 1.00
-                    k_v = 1 / v_norm if v_norm != 0 else 1.00
+                # Make a position vector who's norm is equal to the body's radius. Make a
+                # unitary velocity vector. Units are in [km] and [km / s].
+                rx, ry, rz = [r_i * R / r_norm for r_i in r_vec]
+                vx, vy, vz = [v_i / v_norm for v_i in v_vec]
 
-                    # Make a position vector who's norm is equal to the body's radius. Make a
-                    # unitary velocity vector. Units are in [m] and [m / s].
-                    rx, ry, rz = [float(k_r * r_i) for r_i in r_vec]
-                    vx, vy, vz = [float(k_v * v_i) for v_i in v_vec]
+                # Fill the template
+                filled_template = template_raw.render(
+                    body=body_name,
+                    rx=rx,
+                    ry=ry,
+                    rz=rz,
+                    vx=vx,
+                    vy=vy,
+                    vz=vz,
+                )
 
-                    # Fill the template
-                    filled_template = template_raw.render(
-                        body=body_name,
-                        rx=rx,
-                        ry=ry,
-                        rz=rz,
-                        vx=vx,
-                        vy=vy,
-                        vz=vz,
-                    )
+                with open(f"frames_tests/{filename}", "w") as filled_template_file:
+                    # print(filled_template, file=filled_template_file)
+                    filled_template_file.write(filled_template)
 
-                    with open(f"frames_tests/{filename}", "w") as filled_template_file:
-                        print(filled_template, file=filled_template_file)
+                # Close the filled template_file
+                filled_template_file.close()
+
+    # Close the template file
+    template_file.close()
+
+
+if __name__ == "__main__":
+    main()
