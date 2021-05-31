@@ -1,5 +1,7 @@
 # poliastro validation
 
+![CI shield](https://github.com/poliastro/validation/actions/workflows/ci_actions.yml/badge.svg?branch=main)
+
 This repository holds validation cases against similar poliastro software.
 Several alternatives are available:
 
