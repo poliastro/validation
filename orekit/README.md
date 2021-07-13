@@ -4,7 +4,7 @@ The following directory holds a validation framework against the [Orekit Python
 wrapper](https://gitlab.orekit.org/orekit-labs/python-wrapper).
 
 
-## How to install
+## Users installation
 
 Preferred way of installation, due to the nature of Orekit, is through `conda`.
 Thus, an `environment.yml` file is provided, listing all required dependencies
@@ -25,6 +25,34 @@ conda activate poliastro-validation
 where `poliastro-validation` is the name of the previously created conda
 environment.
 
+
+## Developers installation
+
+If you require to use the validation utilities for testing some poliastro source
+code modification, then you should install poliastro in development in the conda
+environment. Therefore, start by creating the conda environment by running:
+
+```bash
+conda create -n poliastro-validation
+``` 
+
+and activate it using:
+
+```bash
+conda activate poliastro-validation
+```
+
+Install the required dependencies via:
+
+```
+conda install -c conda-forge flit 
+conda install -c conda-forge orekit
+conda install -c anaconda pytest
+```
+
+then clone the poliastro repository and install the library in development mode
+by following [the official
+guide](https://docs.poliastro.space/en/stable/contributing.html#development-environment)
 
 ## How to run the tests
 
