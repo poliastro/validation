@@ -7,13 +7,13 @@ from org.orekit.bodies import CelestialBodyFactory, OneAxisEllipsoid
 from org.orekit.frames import FramesFactory
 from org.orekit.orbits import KeplerianOrbit, PositionAngle
 from org.orekit.propagation.analytical import KeplerianPropagator
-from org.orekit.propagation.events import LatitudeCrossingDetector
-from org.orekit.propagation.events.handlers import StopOnEvent
+from org.orekit.propagation.events import EclipseDetector, LatitudeCrossingDetector
+from org.orekit.propagation.events.handlers import StopOnDecreasing, StopOnIncreasing
 from org.orekit.time import AbsoluteDate, TimeScalesFactory
 from org.orekit.utils import Constants, IERSConventions
 from poliastro.bodies import Earth
 from poliastro.twobody import Orbit
-from poliastro.twobody.events import LatitudeCrossEvent
+from poliastro.twobody.events import LatitudeCrossEvent, PenumbraEvent, UmbraEvent
 from poliastro.twobody.propagation import cowell
 
 import orekit
@@ -70,15 +70,53 @@ ss0_poliastro = Orbit.from_classical(
 )
 
 DICT_OF_EVENTS = {
-    "latitude": [
+    "umbra-entry": [
+        # orekit umbra eclipse detector
+        EclipseDetector(Sun_orekit, RSun_orekit, Earth_orekit)
+        .withUmbra()
+        .withHandler(StopOnDecreasing()),
+        # poliastro umbra eclipse detector
+        UmbraEvent(ss0_poliastro, terminal=True, direction=1),
+    ],
+    "umbra-exit": [
+        # orekit umbra eclipse detector
+        EclipseDetector(Sun_orekit, RSun_orekit, Earth_orekit)
+        .withUmbra()
+        .withHandler(StopOnIncreasing()),
+        # poliastro umbra eclipse detector
+        UmbraEvent(ss0_poliastro, terminal=True, direction=-1),
+    ],
+    "penumbra-entry": [
+        # orekit penumbra eclipse detector
+        EclipseDetector(Sun_orekit, RSun_orekit, Earth_orekit)
+        .withPenumbra()
+        .withHandler(StopOnDecreasing()),
+        # poliastro penumbra eclipse detector
+        PenumbraEvent(ss0_poliastro, terminal=True, direction=1),
+    ],
+    "penumbra-exit": [
+        # orekit penumbra eclipse detector
+        EclipseDetector(Sun_orekit, RSun_orekit, Earth_orekit)
+        .withPenumbra()
+        .withHandler(StopOnIncreasing()),
+        # poliastro penumbra eclipse detector
+        PenumbraEvent(ss0_poliastro, terminal=True, direction=-1),
+    ],
+    "latitude-entry": [
         # orekit latitude crossing event
         LatitudeCrossingDetector(Earth_orekit, 45.00 * DEG_TO_RAD).withHandler(
-            StopOnEvent()
+            StopOnDecreasing()
         ),
         # poliastro latitude crossing event
-        LatitudeCrossEvent(ss0_poliastro, 45.00 * u.deg, terminal=True),
-        5 * u.s,
-        1e-7,
+        LatitudeCrossEvent(ss0_poliastro, 45.00 * u.deg, terminal=True, direction=-1),
+    ],
+    "latitude-exit": [
+        # orekit latitude crossing event
+        LatitudeCrossingDetector(Earth_orekit, 45.00 * DEG_TO_RAD).withHandler(
+            StopOnIncreasing()
+        ),
+        # poliastro latitude crossing event
+        LatitudeCrossEvent(ss0_poliastro, 45.00 * u.deg, terminal=True, direction=1),
     ],
 }
 """A dictionary holding the orekitEvent, the poliastroEvent and the absolute and
@@ -89,7 +127,7 @@ relative tolerances for the assertion test."""
 def validate_event_detector(event_name):
 
     # Unpack orekit and poliastro events
-    orekit_event, poliastro_event, atol, rtol = DICT_OF_EVENTS[event_name]
+    orekit_event, poliastro_event = DICT_OF_EVENTS[event_name]
 
     # Time of fliht for propagating the orbit
     tof = float(2 * 24 * 3600)
@@ -105,6 +143,7 @@ def validate_event_detector(event_name):
     orekit_event_epoch_str = orekit_event_epoch_raw.toString(TimeScalesFactory.getUTC())
     orekit_event_epoch = Time(orekit_event_epoch_str, scale="utc", format="isot")
     orekit_event_epoch.format = "iso"
+    print(f"{orekit_event_epoch}")
 
     # Propagate poliastro's orbit
     _, _ = cowell(
@@ -116,7 +155,8 @@ def validate_event_detector(event_name):
         events=[poliastro_event],
     )
     poliastro_event_epoch = ss0_poliastro.epoch + poliastro_event.last_t
+    print(f"{poliastro_event_epoch}")
 
     # Test both event epochs by checking the distance in seconds between them
     dt = np.abs((orekit_event_epoch - poliastro_event_epoch).to(u.s))
-    assert_quantity_allclose(dt, 0 * u.s, atol=atol, rtol=rtol)
+    assert_quantity_allclose(dt, 0 * u.s, atol=5 * u.s, rtol=1e-7)
