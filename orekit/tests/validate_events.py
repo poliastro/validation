@@ -7,13 +7,26 @@ from org.orekit.bodies import CelestialBodyFactory, OneAxisEllipsoid
 from org.orekit.frames import FramesFactory
 from org.orekit.orbits import KeplerianOrbit, PositionAngle
 from org.orekit.propagation.analytical import KeplerianPropagator
-from org.orekit.propagation.events import EclipseDetector, LatitudeCrossingDetector
-from org.orekit.propagation.events.handlers import StopOnDecreasing, StopOnIncreasing
+from org.orekit.propagation.events import (
+    EclipseDetector,
+    LatitudeCrossingDetector,
+    NodeDetector,
+)
+from org.orekit.propagation.events.handlers import (
+    StopOnDecreasing,
+    StopOnEvent,
+    StopOnIncreasing,
+)
 from org.orekit.time import AbsoluteDate, TimeScalesFactory
 from org.orekit.utils import Constants, IERSConventions
 from poliastro.bodies import Earth
 from poliastro.twobody import Orbit
-from poliastro.twobody.events import LatitudeCrossEvent, PenumbraEvent, UmbraEvent
+from poliastro.twobody.events import (
+    LatitudeCrossEvent,
+    NodeCrossEvent,
+    PenumbraEvent,
+    UmbraEvent,
+)
 from poliastro.twobody.propagation import cowell
 
 import orekit
@@ -117,6 +130,10 @@ DICT_OF_EVENTS = {
         ),
         # poliastro latitude crossing event
         LatitudeCrossEvent(ss0_poliastro, 45.00 * u.deg, terminal=True, direction=1),
+    ],
+    "node-cross": [
+        NodeDetector(ss0_orekit, ss0_orekit.frame).withHandler(StopOnEvent()),
+        NodeCrossEvent(terminal=True),
     ],
 }
 """A dictionary holding the orekitEvent, the poliastroEvent and the absolute and
