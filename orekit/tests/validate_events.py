@@ -3,12 +3,13 @@ import pytest
 from astropy import units as u
 from astropy.tests.helper import assert_quantity_allclose
 from astropy.time import Time
-from org.orekit.bodies import CelestialBodyFactory, OneAxisEllipsoid
-from org.orekit.frames import FramesFactory
+from org.orekit.bodies import CelestialBodyFactory, GeodeticPoint, OneAxisEllipsoid
+from org.orekit.frames import FramesFactory, TopocentricFrame
 from org.orekit.orbits import KeplerianOrbit, PositionAngle
 from org.orekit.propagation.analytical import KeplerianPropagator
 from org.orekit.propagation.events import (
     EclipseDetector,
+    ElevationDetector,
     LatitudeCrossingDetector,
     NodeDetector,
 )
@@ -25,6 +26,7 @@ from poliastro.twobody.events import (
     LatitudeCrossEvent,
     NodeCrossEvent,
     PenumbraEvent,
+    SatelliteVisibilityEvent,
     UmbraEvent,
 )
 from poliastro.twobody.propagation import cowell
@@ -43,12 +45,19 @@ DEG_TO_RAD = np.pi / 180
 Sun_orekit, RSun_orekit = CelestialBodyFactory.getSun(), Constants.SUN_RADIUS
 # orekit requires that the attractor is of the ~OneAxisEllipsoid so its event
 # detector can properly function. Therefore, the Earth is instantiated from this
-# class although the flatteing factor is set to zero so it still becomes a
+# class although the flattening factor is set to zero so it still becomes a
 # perfect sphere
 REarth_orekit = Constants.WGS84_EARTH_EQUATORIAL_RADIUS
 Earth_orekit = OneAxisEllipsoid(
     Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
     float(0),
+    FramesFactory.getITRF(IERSConventions.IERS_2010, True),
+)
+
+# Define a flattened Earth instead of a perfect sphere model for the satellite visibility event.
+Earth_orekit_satellite_visibility = OneAxisEllipsoid(
+    Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+    Constants.WGS84_EARTH_FLATTENING,
     FramesFactory.getITRF(IERSConventions.IERS_2010, True),
 )
 
@@ -81,6 +90,9 @@ ss0_poliastro = Orbit.from_classical(
     nu * u.deg,
     epoch0_poliastro,
 )
+
+point = GeodeticPoint(47 * DEG_TO_RAD, 45 * DEG_TO_RAD, 5.0)  # lat, lon, h
+topo_frame = TopocentricFrame(Earth_orekit_satellite_visibility, point, "earth-station")
 
 DICT_OF_EVENTS = {
     "umbra-entry": [
@@ -135,6 +147,12 @@ DICT_OF_EVENTS = {
         NodeDetector(ss0_orekit, ss0_orekit.frame).withHandler(StopOnEvent()),
         NodeCrossEvent(terminal=True),
     ],
+    "satellite-visibility": [
+        ElevationDetector(topo_frame).withHandler(StopOnEvent()),
+        SatelliteVisibilityEvent(
+            ss0_poliastro, 46 * u.deg, 45 * u.deg, 5.0 * u.m, terminal=True
+        ),
+    ],
 }
 """A dictionary holding the orekitEvent, the poliastroEvent and the absolute and
 relative tolerances for the assertion test."""
@@ -160,7 +178,6 @@ def validate_event_detector(event_name):
     orekit_event_epoch_str = orekit_event_epoch_raw.toString(TimeScalesFactory.getUTC())
     orekit_event_epoch = Time(orekit_event_epoch_str, scale="utc", format="isot")
     orekit_event_epoch.format = "iso"
-    print(f"{orekit_event_epoch}")
 
     # Propagate poliastro's orbit
     _, _ = cowell(
@@ -172,7 +189,6 @@ def validate_event_detector(event_name):
         events=[poliastro_event],
     )
     poliastro_event_epoch = ss0_poliastro.epoch + poliastro_event.last_t
-    print(f"{poliastro_event_epoch}")
 
     # Test both event epochs by checking the distance in seconds between them
     dt = np.abs((orekit_event_epoch - poliastro_event_epoch).to(u.s))
