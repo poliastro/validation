@@ -150,7 +150,7 @@ DICT_OF_EVENTS = {
     "satellite-visibility": [
         ElevationDetector(topo_frame).withHandler(StopOnEvent()),
         SatelliteVisibilityEvent(
-            ss0_poliastro, 46 * u.deg, 45 * u.deg, 5.0 * u.m, terminal=True
+            ss0_poliastro, 47 * u.deg, 45 * u.deg, 5.0 * u.m, terminal=True
         ),
     ],
 }
